@@ -52,18 +52,21 @@ complexd * generate(long long n) {
 	double length = 0;
 	long long i;
 	unsigned int seed = time(0);
-#pragma omp parallel shared(size, a, length)
-#pragma omp for reduction(+:length) private(i, seed)
-	for (i = 0; i < size; i++) {
-		seed += omp_get_thread_num() + i + 1 + size/omp_get_num_threads();
-		a[i].real(rand_r(&seed));
-		a[i].imag(rand_r(&seed));
-		length += abs(a[i]) * abs(a[i]);
+#pragma omp parallel shared(size, a, length) firstprivate(seed)
+	{
+		seed += omp_get_thread_num();
+	#pragma omp for reduction(+:length) private(i)
+		for (i = 0; i < size; i++) {
+			a[i].real(rand_r(&seed));
+			a[i].imag(rand_r(&seed));
+			length += abs(a[i]) * abs(a[i]);
+		}
+	#pragma omp single
+		length = sqrt(length);
+	#pragma omp for private(i)
+		for (i = 0; i < size; i++)
+			a[i] /= length;
 	}
-	length = sqrt(length);
-#pragma omp for private(i)
-	for (i = 0; i < size; i++)
-		a[i] /= length;
 	return a;
 }
 
