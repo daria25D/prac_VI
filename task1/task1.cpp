@@ -46,15 +46,16 @@ complexd * quantum(complexd * a, long long n, complexd ** U, long long k) {
 	return b;
 }
 
-complexd * generate(long long n, unsigned int seed) {
+complexd * generate(long long n) {
 	long long size = power(2, n);
 	complexd * a = new complexd[size];
 	double length = 0;
 	long long i;
-#pragma omp parallel shared(size, a, length)
+	unsigned int seed = time(0);
+#pragma omp parallel shared(size, a, length, seed)
 #pragma omp for reduction(+:length) private(i)
 	for (i = 0; i < size; i++) {
-		seed += omp_get_thread_num();
+		seed += omp_get_thread_num() + i + 1 + size/omp_get_num_threads();
 		a[i].real(rand_r(&seed));
 		a[i].imag(rand_r(&seed));
 		length += abs(a[i]) * abs(a[i]);
@@ -78,10 +79,9 @@ int main(int argc, char ** argv) {
 	U[0][1] = 1 / sqrt(2);
 	U[1][0] = 1 / sqrt(2);
 	U[1][1] = -1 / sqrt(2);
-	unsigned int seed = time(0);
 	omp_set_num_threads(n_threads);
 	double timer1 = omp_get_wtime();
-	complexd * a = generate(n, seed);
+	complexd * a = generate(n);
 	timer1 = omp_get_wtime() - timer1;
 	double timer2 = omp_get_wtime();
 	complexd * b = quantum(a, n, U, k);
