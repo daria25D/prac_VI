@@ -98,8 +98,8 @@ int main(int argc, char ** argv) {
 	for (long long i = 0; i < size; i++) {
 		f << b[i] << "\n";
 	}
-	//cout << timer1 << endl;
-	cout << timer2 << endl;
-	//cin >> n;
+	cout << timer1 + timer2 << endl;
+	delete a;
+	delete b;
 	return 0;
 }
