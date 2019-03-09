@@ -64,24 +64,14 @@ complexd * quantum(complexd * a, int n, complexd ** U, int k) {
             if (rank1 != rank) { //need to send a[idx2] and receive a[idx1]
                 a_idx_swap = a[idx2 - rank*size_of_a];
                 MPI_Status status;
-                MPI_Send(&a_idx_swap, 1, MPI_DOUBLE_COMPLEX, rank1, 0, MPI_COMM_WORLD);
-                MPI_Recv(&a_idx, 1, MPI_DOUBLE_COMPLEX, rank1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                //MPI_Send(&a_idx2_imag, 1, MPI_DOUBLE, rank1, 0, MPI_COMM_WORLD);
-                //MPI_Recv(&a_idx1_imag, 1, MPI_DOUBLE, rank1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                //a_idx.real(a_idx1_real);
-                //a_idx.imag(a_idx1_imag);
+                MPI_Send(&a_idx_swap, 1, MPI_CXX_DOUBLE_COMPLEX, rank1, 0, MPI_COMM_WORLD);
+                MPI_Recv(&a_idx, 1, MPI_CXX_DOUBLE_COMPLEX, rank1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 b[i] = U[idx_ik][0] * a_idx + U[idx_ik][1] * a[idx2 - rank * size_of_a];
             } else if (rank2 != rank) { //need to send a[idx1] and receive a[idx2]
-                //a_idx1_real = a[idx1 - rank * size_of_a].real();
-                //a_idx1_imag = a[idx1 - rank * size_of_a].imag();
                 a_idx_swap = a[idx1 - rank*size_of_a];
                 MPI_Status status;
-                MPI_Recv(&a_idx, 1, MPI_DOUBLE_COMPLEX, rank2, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                MPI_Send(&a_idx_swap, 1, MPI_DOUBLE_COMPLEX, rank2, 0, MPI_COMM_WORLD);
-                //MPI_Recv(&a_idx2_imag, 1, MPI_DOUBLE, rank2, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                //MPI_Send(&a_idx1_imag, 1, MPI_DOUBLE, rank2, 0, MPI_COMM_WORLD);
-                //a_idx.real(a_idx2_real);
-                //a_idx.imag(a_idx2_imag);
+                MPI_Recv(&a_idx, 1, MPI_CXX_DOUBLE_COMPLEX, rank2, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                MPI_Send(&a_idx_swap, 1, MPI_CXX_DOUBLE_COMPLEX, rank2, 0, MPI_COMM_WORLD);
                 b[i] = U[idx_ik][0] * a[idx1 - rank * size_of_a] + U[idx_ik][1] * a_idx;
             } else { // no messages needed
 		        b[i] = U[idx_ik][0] * a[idx1 - rank * size_of_a] + U[idx_ik][1] * a[idx2 - rank * size_of_a]; 
@@ -113,9 +103,23 @@ complexd * generate(int n) {
         a[i].imag(rand_r(&seed));
         length += abs(a[i]) * abs(a[i]);
     }
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Allreduce(&length, &length, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     length = sqrt(length);
     for (i = 0; i < size_array; i++)
+        a[i] /= length;
+	return a;
+}
+
+complexd * normalize(complexd * a, long long size_array) {
+    double length = 0.0;
+    for (long long i = 0; i < size_array; i++) {
+        length += abs(a[i]) * abs(a[i]);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Allreduce(&length, &length, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    length = sqrt(length);
+    for (long long i = 0; i < size_array; i++)
         a[i] /= length;
 	return a;
 }
@@ -131,7 +135,7 @@ int main(int argc, char ** argv) {
     // ./task2 file_in file_out
 	int n, k;
     bool gen_flag = false;
-    if (argc != 2 && argc != 5) {
+    if (argc != 3 && argc != 5) {
         cout << "Not enough arguments\n";
         return -1;
     }
@@ -144,6 +148,10 @@ int main(int argc, char ** argv) {
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+	long long size_array = power(2, n) / size;
+    int complex_size, int_size;
+    MPI_Type_size(MPI_CXX_DOUBLE_COMPLEX, &complex_size);
+    MPI_Type_size(MPI_INT, &int_size);
     double timer1 = 0.0;
     complexd * a;
 	if (gen_flag) {
@@ -152,10 +160,15 @@ int main(int argc, char ** argv) {
         timer1 = MPI_Wtime() - timer1;
     } else {
         //read from file
+        a = new complexd[size_array];
         MPI_File f;
-        MPI_File_open(MPI_COMM_WORLD, argv[3], MPI_MODE_RDONLY, MPI_INFO_NULL, &f);
+        MPI_File_open(MPI_COMM_WORLD, argv[1], MPI_MODE_RDONLY, MPI_INFO_NULL, &f);
         MPI_File_read_all(f, &n, 1, MPI_INT, MPI_STATUS_IGNORE);
         MPI_File_read_all(f, &k, 1, MPI_INT, MPI_STATUS_IGNORE);
+        MPI_File_set_view(f, rank * size_array * complex_size + 2 * int_size, MPI_CXX_DOUBLE_COMPLEX, 
+                          MPI_CXX_DOUBLE_COMPLEX, "native", MPI_INFO_NULL);
+        MPI_File_read(f, a, size_array, MPI_CXX_DOUBLE_COMPLEX, MPI_STATUS_IGNORE);
+        normalize(a, size_array);
     }
 	complexd ** U = new complexd*[2];
 	U[0] = new complexd[2];
@@ -168,16 +181,30 @@ int main(int argc, char ** argv) {
 	double timer2 = MPI_Wtime();
 	complexd * b = quantum(a, n, U, k);
 	timer2 = MPI_Wtime() - timer2;
-	long long size_array = power(2, n) / size;
 
-    /**
-    TODO
-    MPI file usage
-    */
-    if (gen_flag && (argv[4], "no") != 0) {
-        //file output in generation mode
-    } else if (argc == 3 && strcmp(argv[2], "no") != 0) {
-        //file output in file mode
+    if (gen_flag && (argv[4], "no") != 0) { //generation mode, output mode
+        //argv[4] - output file
+        MPI_File out;
+        MPI_File_open(MPI_COMM_WORLD, argv[4], MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &out);
+        if (rank == 0) {
+            MPI_File_write(out, &n, 1, MPI_INT, MPI_STATUS_IGNORE);
+            MPI_File_write(out, &k, 1, MPI_INT, MPI_STATUS_IGNORE);
+        }
+        MPI_File_set_view(out, rank * size_array * complex_size + 2 * int_size, MPI_CXX_DOUBLE_COMPLEX, 
+                          MPI_CXX_DOUBLE_COMPLEX, "native", MPI_INFO_NULL);
+        MPI_File_write(out, b, size_array, MPI_CXX_DOUBLE_COMPLEX, MPI_STATUS_IGNORE);
+
+    } else if (!gen_flag && strcmp(argv[2], "no") != 0) { //non-generation mode, output mode
+        //argv[2] - output file
+        MPI_File out;
+        MPI_File_open(MPI_COMM_WORLD, argv[2], MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &out);
+        if (rank == 0) {
+            MPI_File_write(out, &n, 1, MPI_INT, MPI_STATUS_IGNORE);
+            MPI_File_write(out, &k, 1, MPI_INT, MPI_STATUS_IGNORE);
+        }
+        MPI_File_set_view(out, rank * size_array * complex_size + 2 * int_size, MPI_CXX_DOUBLE_COMPLEX, 
+                          MPI_CXX_DOUBLE_COMPLEX, "native", MPI_INFO_NULL);
+        MPI_File_write(out, b, size_array, MPI_CXX_DOUBLE_COMPLEX, MPI_STATUS_IGNORE);
     } else {
         //no output
     }
