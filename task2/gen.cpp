@@ -18,7 +18,7 @@ long long power(int base, int deg) {
 }
 
 int main(int argc, char **argv) {
-    //./generate type rows columns file
+    //./generate n k file
     if (argc != 4) {
         cerr << "Wrong number of arguments";
         return -1;

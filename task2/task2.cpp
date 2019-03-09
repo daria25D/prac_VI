@@ -139,7 +139,7 @@ int main(int argc, char ** argv) {
         cout << "Not enough arguments\n";
         return -1;
     }
-    if (argc == 5 && strcmp(argv[3], "gen") == 0) { //generate mod
+    if (argc == 5 && strcmp(argv[3], "gen") == 0) { //generation mod
         gen_flag = true;
 	    n = atoi(argv[1]);
 	    k = atoi(argv[2]);
@@ -154,7 +154,7 @@ int main(int argc, char ** argv) {
     MPI_Type_size(MPI_INT, &int_size);
     double timer1 = 0.0;
     complexd * a;
-	if (gen_flag) {
+	if (gen_flag) { //generation mode
         timer1 = MPI_Wtime();
 	    a = generate(n);
         timer1 = MPI_Wtime() - timer1;
@@ -169,6 +169,7 @@ int main(int argc, char ** argv) {
                           MPI_CXX_DOUBLE_COMPLEX, "native", MPI_INFO_NULL);
         MPI_File_read(f, a, size_array, MPI_CXX_DOUBLE_COMPLEX, MPI_STATUS_IGNORE);
         normalize(a, size_array);
+        MPI_File_close(&f);
     }
 	complexd ** U = new complexd*[2];
 	U[0] = new complexd[2];
@@ -182,7 +183,7 @@ int main(int argc, char ** argv) {
 	complexd * b = quantum(a, n, U, k);
 	timer2 = MPI_Wtime() - timer2;
 
-    if (gen_flag && (argv[4], "no") != 0) { //generation mode, output mode
+    if (gen_flag && strcmp(argv[4], "no") != 0) { //generation mode, output mode
         //argv[4] - output file
         MPI_File out;
         MPI_File_open(MPI_COMM_WORLD, argv[4], MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &out);
@@ -193,6 +194,7 @@ int main(int argc, char ** argv) {
         MPI_File_set_view(out, rank * size_array * complex_size + 2 * int_size, MPI_CXX_DOUBLE_COMPLEX, 
                           MPI_CXX_DOUBLE_COMPLEX, "native", MPI_INFO_NULL);
         MPI_File_write(out, b, size_array, MPI_CXX_DOUBLE_COMPLEX, MPI_STATUS_IGNORE);
+        MPI_File_close(&out);
 
     } else if (!gen_flag && strcmp(argv[2], "no") != 0) { //non-generation mode, output mode
         //argv[2] - output file
@@ -205,10 +207,11 @@ int main(int argc, char ** argv) {
         MPI_File_set_view(out, rank * size_array * complex_size + 2 * int_size, MPI_CXX_DOUBLE_COMPLEX, 
                           MPI_CXX_DOUBLE_COMPLEX, "native", MPI_INFO_NULL);
         MPI_File_write(out, b, size_array, MPI_CXX_DOUBLE_COMPLEX, MPI_STATUS_IGNORE);
+        MPI_File_close(&out);
     } else {
         //no output
     }
-	if (rank == 0) cout << timer1 << "\n" << timer2 << endl;
+	if (rank == 0) cout << timer1 + timer2 << endl;
 	delete a;
 	delete b;
     MPI_Finalize();
