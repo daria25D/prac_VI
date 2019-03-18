@@ -50,12 +50,16 @@ complexd * quantum(complexd * a, int n, complexd ** U, int k) {
     if (flag_exchange) {          
         idx1 = (rank * size_of_a) & n0;
         idx2 = (rank * size_of_a) | n1;
+        bool flag = true;
+#pragma omp parallel for shared(size_of_a, rank, rank1, rank2, size, idx1, idx2, flag)
         for (long long j = 0; j < size; j++) {
-            if (idx1 >= j * size_of_a && idx1 < (j + 1) * size_of_a) 
-                rank1 = j;
-            if (idx2 >= j * size_of_a && idx2 < (j + 1) * size_of_a) 
-                rank2 = j;
-            if (rank1 != 0 && rank2 != 0) break;
+            if (flag) { 
+                if (idx1 >= j * size_of_a && idx1 < (j + 1) * size_of_a) 
+                    rank1 = j;
+                if (idx2 >= j * size_of_a && idx2 < (j + 1) * size_of_a) 
+                    rank2 = j;
+                if (rank1 != 0 && rank2 != 0) flag = false;
+            }
         }
         a_swap = new complexd[size_of_a];
         if (rank == rank1) {
@@ -66,7 +70,6 @@ complexd * quantum(complexd * a, int n, complexd ** U, int k) {
             MPI_Send(a, size_of_a, MPI_CXX_DOUBLE_COMPLEX, rank1, 0, MPI_COMM_WORLD);
         }
     }
-    //do omp for
 #pragma omp parallel shared(size_of_a, b, a_swap, rank, rank1, rank2, n0, n1, flag_exchange)
 #pragma omp for
     for (long long i = 0; i < size_of_a; i++) {
@@ -96,6 +99,7 @@ complexd * generate(int n) {
     double length = 0;
     long long i;
     unsigned int seed = time(0);
+    //cout << seed << endl;
     seed *= rank + 1;
     //do omp for
 #pragma omp parallel shared(size, a, length) firstprivate(seed)
@@ -147,19 +151,19 @@ double normal_dis_gen() {
 }
 
 int main(int argc, char ** argv) {
-    // ./task3 n eps iter_count threads output_file <input_file>
+    // ./task3 n eps iter_count threads output_file F_file <input_file>
     // if iter_count == 1 - only for time computation
     int n, k, iter_count, threads;
     double eps;
     bool out_flag = false, gen_flag = true;
-    if (argc != 6 && argc !=7) {
+    if (argc != 7 && argc != 8) {
         cout << "Not enough arguments\n";
         return -1;
     }
     if (strcmp(argv[5], "no") != 0) { //output mode
         out_flag = true;
     } 
-    if (argc == 7) gen_flag = false;
+    if (argc == 8) gen_flag = false;
     n = atoi(argv[1]);  
     eps = atof(argv[2]);
     iter_count = atoi(argv[3]);
@@ -182,11 +186,11 @@ int main(int argc, char ** argv) {
     MPI_Type_size(MPI_CXX_DOUBLE_COMPLEX, &complex_size);
     MPI_Type_size(MPI_INT, &int_size);
     double timer = 0.0;
-    complexd * a, * b_noise, * b_ideal, * a_file;
+    complexd * a, * b_noise, * b_ideal, * a_file, * a_ideal;
     size_array = power(2, n) / size;
     if (!gen_flag) {
         MPI_File fh;
-        MPI_File_open(MPI_COMM_WORLD, argv[6], MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+        MPI_File_open(MPI_COMM_WORLD, argv[7], MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
         MPI_File_read_all(fh, &n, 1, MPI_INT, MPI_STATUS_IGNORE);
         MPI_File_set_view(fh, rank * size_array * complex_size + int_size, MPI_CXX_DOUBLE_COMPLEX, 
                           MPI_CXX_DOUBLE_COMPLEX, "native", MPI_INFO_NULL);
@@ -195,18 +199,23 @@ int main(int argc, char ** argv) {
         normalize(a_file, size_array);
         MPI_File_close(&fh);
     }
+    double F;
     ofstream f;
-    if (iter_count > 1) f.open("F.txt", ofstream::out);
+    complexd ** H_e = new complexd*[2];
+    H_e[0] = new complexd[2];
+    H_e[1] = new complexd[2];
+    if (iter_count > 1 && rank == 0) f.open(argv[6], ofstream::out);
     for (int i = 0; i < iter_count; i++) {
         if (gen_flag) a = generate(n);
-        else a = a_file;
+        else {
+            a = new complexd[size_array];
+            memmove(a, a_file, sizeof(complexd) * size_array);
+        }
         k = 1;
-        complexd * a_ideal = a;
-        timer = MPI_Wtime();
+        a_ideal = new complexd[size_array];  
+        memmove(a_ideal, a, sizeof(complexd) * size_array);
+
         for (int j = 0; j < n; j++) {
-            complexd ** H_e = new complexd*[2];
-            H_e[0] = new complexd[2];
-            H_e[1] = new complexd[2];
             if (rank == 0) { //generate H_e
                 double xi = normal_dis_gen();
                 double theta = xi * eps;
@@ -217,25 +226,38 @@ int main(int argc, char ** argv) {
             }
             MPI_Bcast(H_e[0], 2, MPI_CXX_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
             MPI_Bcast(H_e[1], 2, MPI_CXX_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
-
+            double timer2 = MPI_Wtime();
             b_noise = quantum(a, n, H_e, k);
-            a = b_noise;
+            timer2 = MPI_Wtime() - timer2;
+            timer += timer2;
+            memmove(a, b_noise, sizeof(complexd) * size_array);
             if (iter_count > 1) {
                 b_ideal = quantum(a_ideal, n, U, k);
-                a_ideal = b_ideal;
+                memmove(a_ideal, b_ideal, sizeof(complexd) * size_array);
             }
-            k++;
+            if (k != n) {
+                delete[] b_ideal;
+                delete[] b_noise;
+            } 
+            k++;               
         }
-        timer = MPI_Wtime() - timer;
-        //compute 1-F
-        if (iter_count > 1 && rank == 0) {
-            double F = 1 - measure(b_noise, b_ideal, n);
-            f << F << endl;
+        if (iter_count > 1) {
+            F = 0.0;
+            double F_local = measure(b_noise, b_ideal, size_array);
+            MPI_Barrier(MPI_COMM_WORLD);
+            MPI_Reduce(&F_local, &F, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+            if (rank == 0) {
+                f << 1 - F << endl;
+            }  
+            delete[] b_ideal;
         }
+        delete[] a;
+        delete[] a_ideal;
+        delete[] b_noise;
     }
+   
     if (out_flag && iter_count == 1) { //output mode, only if iter_count == 1
         //argv[5] - output file
-        cout << iter_count << endl;
         MPI_File out;
         MPI_File_open(MPI_COMM_WORLD, argv[5], MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &out);
 
@@ -248,13 +270,14 @@ int main(int argc, char ** argv) {
         MPI_File_write(out, b_noise, size_array, MPI_CXX_DOUBLE_COMPLEX, MPI_STATUS_IGNORE);
         MPI_File_close(&out);
     } 
-    if (rank == 0 && iter_count == 1) cout << timer << endl;
-    delete b_noise;
+    double timer2;
+    MPI_Reduce(&timer, &timer2, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+    if (rank == 0 && iter_count == 1) cout << timer2 << endl;
+
     if (iter_count > 1) {
-        delete b_ideal;
-        f.close();
+        if (rank == 0) f.close();
     }
-    if (!gen_flag) delete a_file;
+    if (!gen_flag) delete[] a_file;
     MPI_Finalize();
     return 0;
 }
