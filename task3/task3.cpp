@@ -1,7 +1,6 @@
 #include <iostream>
 #include <complex>
 #include <cstdlib>
-#include <random>
 #include <cmath>
 #include <ctime>
 #include <fstream>
@@ -136,10 +135,10 @@ complexd * normalize(complexd * a, long long size_array) {
 }
 
 double measure(complexd * noise, complexd * ideal, int n) {
-    double M = 0.0;
+    complexd M(0.0, 0.0);
     for (int i = 0; i < n; i++)
-        M += abs(conj(noise[i]) * ideal[i]);
-    return M;
+        M += conj(noise[i]) * ideal[i];
+    return abs(M);
 }
 
 double normal_dis_gen() { 
@@ -195,6 +194,7 @@ int main(int argc, char ** argv) {
         MPI_File_set_view(fh, rank * size_array * complex_size + int_size, MPI_CXX_DOUBLE_COMPLEX, 
                           MPI_CXX_DOUBLE_COMPLEX, "native", MPI_INFO_NULL);
         a_file = new complexd[size_array];
+        a_file = normalize(a_file, size_array);
         MPI_File_read(fh, a_file, size_array, MPI_CXX_DOUBLE_COMPLEX, MPI_STATUS_IGNORE);
         normalize(a_file, size_array);
         MPI_File_close(&fh);
