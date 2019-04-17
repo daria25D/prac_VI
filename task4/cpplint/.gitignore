@@ -1,0 +1,5 @@
+/cpplint-*.pkg.tar.*
+/pkg/
+/src/
+/styleguide/
+/styleguide.mirror/

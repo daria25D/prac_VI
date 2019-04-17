@@ -13,3 +13,6 @@ test: task4
 	g++ test_not.cpp -o test_not
 	./test_not a_out.txt 2 1 test_out.txt
 	diff -s out.txt test_out.txt
+
+lint: task4
+	./cpplint/src/styleguide/cpplint/cpplint.py task4.cpp 
