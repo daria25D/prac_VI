@@ -14,7 +14,7 @@
 typedef std::complex<double> complexd;
 using namespace std;
 
-const complexd U[2][2] = {{1 / sqrt(2), 1 / sqrt(2)}, {1 / sqrt(2), -1 / sqrt(2)}};
+const complexd U_[2][2] = {{1 / sqrt(2), 1 / sqrt(2)}, {1 / sqrt(2), -1 / sqrt(2)}};
 
 long long power(long long base, long long deg) {
 	long long res = 1;
@@ -28,6 +28,20 @@ long long power(long long base, long long deg) {
 	return res;
 }
 
+complexd * normalize(complexd * a, long long size_array) {
+    double length = 0.0;
+    for (long long i = 0; i < size_array; i++) {
+        length += abs(a[i]) * abs(a[i]);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Allreduce(&length, &length, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    length = sqrt(length);
+    for (long long i = 0; i < size_array; i++) {
+        a[i] /= length;
+    }
+	return a;
+}
+
 complexd * generate(int n) {
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -37,6 +51,7 @@ complexd * generate(int n) {
     double length = 0;
     long long i;
     unsigned int seed = time(0);
+    //cout << size << endl;
     seed *= rank + 1;
 #pragma omp parallel shared(size, a, length) firstprivate(seed)
     {
@@ -46,6 +61,7 @@ complexd * generate(int n) {
             a[i].real(rand_r(&seed));
             a[i].imag(rand_r(&seed));
             length += abs(a[i]) * abs(a[i]);
+            //cout << a[i] << endl;
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -53,22 +69,12 @@ complexd * generate(int n) {
 #pragma omp single
     length = sqrt(length);
 #pragma omp for private(i)
-    for (i = 0; i < size_array; i++)
-    a[i] /= length;
-    return a;
-}
-
-complexd * normalize(complexd * a, long long size_array) {
-    double length = 0.0;
-    for (long long i = 0; i < size_array; i++) {
-        length += abs(a[i]) * abs(a[i]);
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Allreduce(&length, &length, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    length = sqrt(length);
-    for (long long i = 0; i < size_array; i++)
+    for (i = 0; i < size_array; i++) {
         a[i] /= length;
-	return a;
+        //cout << a[i] << endl;
+    }
+    //a = normalize(a, size_array);
+    return a;
 }
 
 complexd * quantum(complexd * a, int n, const complexd U[][2], int k) {
@@ -90,7 +96,7 @@ complexd * quantum(complexd * a, int n, const complexd U[][2], int k) {
             n0 = (n0 << 1) | 1;
     }
     complexd * b = new complexd[size_of_a];
-    complexd * a_swap;
+    complexd * a_swap = new complexd;
     bool flag_exchange = false;
     if (pow(2, k) <= size) {
         flag_exchange = true;
@@ -135,20 +141,23 @@ complexd * quantum(complexd * a, int n, const complexd U[][2], int k) {
             b[i] = U[idx_ik][0] * a[idx1 - rank * size_of_a] + U[idx_ik][1] * a[idx2 - rank * size_of_a]; 
         }
     }
+    // for (long long i = 0; i < size_of_a; i++) {
+    //     cout << a[i] << endl;
+    // }
     return b;
 }
 
 complexd * quantum_Adamar(complexd * a, int n, int k) {
-    return quantum(a, n, U, k);
+    return quantum(a, n, U_, k);
 }
 
 complexd * quantum_nAdamar(complexd * a, int n) {
-    complexd * b;
+    complexd * b = new complexd;
     int size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     long long size_array = power(2, n) / size;
     for (int k = 0; k < n; k++) {
-        b = quantum(a, n, U, k);
+        b = quantum(a, n, U_, k);
         memmove(a, b, sizeof(complexd) * size_array);
         if (k != n) delete[] b;
     }
@@ -178,12 +187,12 @@ void File_MPI_Write(complexd * b, long long size_array, int k, char * filename, 
 
     if (rank == 0) {
         MPI_File_write(out, &size_array, 1, MPI_LONG_LONG, MPI_STATUS_IGNORE);
-        if (k != 0) {
-            MPI_File_write(out, &k, 1, MPI_LONG_LONG, MPI_STATUS_IGNORE);
-            int int_size;
-            MPI_Type_size(MPI_INT, &int_size);
-            long_size += int_size;
-        }
+    }
+    if (k != 0) {
+        if (rank == 0) MPI_File_write(out, &k, 1, MPI_INT, MPI_STATUS_IGNORE);
+        int int_size;
+        MPI_Type_size(MPI_INT, &int_size);
+        long_size += int_size;
     }
     MPI_File_set_view(out, rank * (size_array/size) * complex_size + long_size, MPI_CXX_DOUBLE_COMPLEX, 
                         MPI_CXX_DOUBLE_COMPLEX, "native", MPI_INFO_NULL);

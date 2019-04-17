@@ -24,12 +24,12 @@ int main(int argc, char ** argv) {
         return -1;
     }
     fstream file(argv[1], ios::binary | ios::in);
-    int n, k;
-    file.read((char *)&n, sizeof(n));
+    long long size;
+    int k;
+    file.read((char *)&size, sizeof(size));
     file.read((char *)&k, sizeof(k));
-    cout << n << setw(5) << k << endl;
+    cout << size << setw(5) << k << endl;
     complex<double> f;
-    long long size = power(2, n);
     for (long long i = 0; i < size; i++) {
         file.read((char *)&f, sizeof(f));
         cout << f << endl;

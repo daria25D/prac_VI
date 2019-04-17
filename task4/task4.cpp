@@ -14,7 +14,7 @@ int main(int argc, char ** argv) {
 		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 		complexd * a = generate(n);
 		complexd * b = quantum_Adamar(a, n, k);
-		File_MPI_Write(b, power(2, n), k, "out.txt", rank);
+		File_MPI_Write(b, power(2, n), k, argv[4], rank);
 		delete[] a;
 		delete[] b;
 	} else if (type == "nAdamar") {
@@ -24,7 +24,7 @@ int main(int argc, char ** argv) {
 		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 		complexd * a = generate(n);
 		complexd * b = quantum_nAdamar(a, n);
-		File_MPI_Write(b, power(2, n), 0, "out.txt", rank);
+		File_MPI_Write(b, power(2, n), 0, argv[3], rank);
 		delete[] a;
 		delete[] b;
 
@@ -37,7 +37,7 @@ int main(int argc, char ** argv) {
 		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 		complexd * a = generate(n);
 		complexd * b = quantum_Rotate(a, n, k, phi);
-		File_MPI_Write(b, power(2, n), k, "out.txt", rank);
+		File_MPI_Write(b, power(2, n), k, argv[5], rank);
 		delete[] a;
 		delete[] b;
 
@@ -49,7 +49,8 @@ int main(int argc, char ** argv) {
 		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 		complexd * a = generate(n);
 		complexd * b = quantum_Not(a, n, k);
-		File_MPI_Write(b, power(2, n), k, "out.txt", rank);
+		File_MPI_Write(b, power(2, n), k, argv[4], rank);
+		File_MPI_Write(a, power(2, n), k, argv[5], rank);
 		delete[] a;
 		delete[] b;
 
