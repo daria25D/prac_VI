@@ -15,6 +15,7 @@ int main(int argc, char ** argv) {
         complexd * a = generate(n);
         complexd * b = quantum_Adamar(a, n, k);
         File_MPI_Write(b, power(2, n), k, argv[4], rank);
+        File_MPI_Write(a, power(2, n), k, argv[5], rank);
         delete[] a;
         delete[] b;
     } else if (type == "nAdamar") {

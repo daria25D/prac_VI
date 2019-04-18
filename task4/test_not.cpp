@@ -1,15 +1,6 @@
 #include <iostream>
 #include <complex>
 
-void usage(int argc, char **argv) {
-    printf("Usage: %s <input_file> <k> <output_file>\n"
-            "   k - qubit index\n"
-            "File format:\n"
-            "   uint64_t n, //vector size, not number of qubits\n"
-            "   complex<double> data[n]\n", argv[0]);
-    exit(1);
-}
-
 long long power(long long base, long long deg) {
 	long long res = 1;
 	if (base == 2) {
@@ -23,9 +14,6 @@ long long power(long long base, long long deg) {
 }
 
 int main(int argc, char **argv) {
-    // if (argc != 4) {
-    //     usage(argc, argv);
-    // }
     int n, k;
     n = atoi(argv[2]);
     k = atoi(argv[3]);
