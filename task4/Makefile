@@ -15,4 +15,4 @@ test: task4
 	diff -s out.txt test_out.txt
 
 lint: task4
-	./cpplint/src/styleguide/cpplint/cpplint.py task4.cpp 
+	.cpplint task4.cpp 
