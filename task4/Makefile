@@ -23,4 +23,6 @@ test: task4 print
 	diff -s out test_out
 
 lint: task4
-	.cpplint task4.cpp 
+	cpplint --filter=-legal/copyright,-build/namespaces task4.cpp 
+	cpplint --filter=-legal/copyright,-build/namespaces test_not.cpp 
+	cpplint --filter=-legal/copyright,-build/namespaces test_Adamar.cpp 
