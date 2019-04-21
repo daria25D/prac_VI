@@ -338,7 +338,8 @@ complexd * quantum_nAdamar(complexd * a, int n) {
 }
 
 complexd * quantum_Rotate(complexd * a, int n, int k, double phi) {
-    const complexd R[2][2] = {{1, 0}, {0, complexd(cos(phi), sin(phi))}};
+    const complexd R[2][2] = {{1, 0}, 
+                              {0, complexd(cos(phi), sin(phi))}};
     return quantum(a, n, R, k);
 }
 
@@ -353,6 +354,14 @@ complexd * quantum_CNot(complexd * a, int n, int k, int l) {
                         {0, 0, 0, 1}, 
                         {0, 0, 1, 0}};
     return quantum4x4(a, n, C, k, l);
+}
+
+complexd * quantum_CRotate(complexd * a, int n, int k, int l, double phi) {
+    complexd R[4][4] = {{1, 0, 0, 0}, 
+                        {0, 1, 0, 0}, 
+                        {0, 0, 1, 0}, 
+                        {0, 0, 0, complexd(cos(phi), sin(phi))}};
+    return quantum4x4(a, n, R, k, l);
 }
 
 void File_MPI_Write(complexd * b, uint64_t size_array, int k, char * filename, int rank) {
