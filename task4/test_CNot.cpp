@@ -16,13 +16,19 @@ int main(int argc, char **argv) {
     if (fread(&size, sizeof(size), 1, f) != 1) {
         exit(1);
     }
-    complexd *source = new complexd[size];
-    complexd *transformed = new complexd[size];
-    if (fread(source, sizeof(source[0]), size, f) != size) {
-        //exit(1);
+    if (fread(&k, sizeof(k), 1, f) != 1) {
+        cout << 2 << endl;
+        exit(1);
+    }
+    complexd *a = new complexd[size];
+    complexd *b = new complexd[size];
+    for (uint64_t i = 0; i < size; i++) {
+        if (fread(&a[i], sizeof(a[0]), 1, f) != 1) {
+            // exit
+        }
     }
     fclose(f);
-
+    int q = k;
     int n = atoi(argv[2]);
     k = n - k;
     l = n - l;
@@ -30,17 +36,18 @@ int main(int argc, char **argv) {
     uint64_t bitl = 1ull << l;
     for (uint64_t i = 0; i < size; ++i) {
         if (i & bitk) {
-            transformed[i] = source[i ^ bitl];
+            b[i] = a[i ^ bitl];
         } else {
-            transformed[i] = source[i];
+            b[i] = a[i];
         }
     }
 
-    f = fopen(argv[4], "wb");
+    f = fopen(argv[5], "wb");
     fwrite(&size, sizeof(size), 1, f);
-    fwrite(transformed, sizeof(transformed[0]), size, f);
+    fwrite(&q, sizeof(q), 1, f);
+    fwrite(b, sizeof(b[0]), size, f);
     fclose(f);
 
-    delete [] source;
-    delete [] transformed;
+    delete [] a;
+    delete [] b;
 }

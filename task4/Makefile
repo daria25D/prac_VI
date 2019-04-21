@@ -21,6 +21,12 @@ test: task4 print
 	./print test_out.txt > test_out
 	./print a_out.txt > out
 	diff -s out test_out
+	mpirun -n 2 ./task4 CNot 3 1 2 out.txt a_out.txt
+	g++ test_CNot.cpp -o test_CNot
+	./test_CNot a_out.txt 3 1 2 test_out.txt
+	./print test_out.txt > test_out
+	./print out.txt > out
+	diff -s out test_out
 
 lint: task4
 	cpplint --filter=-legal/copyright,-build/namespaces task4.cpp 

@@ -18,6 +18,7 @@ long long power(int base, int deg) {
 }
 
 int main(int argc, char ** argv) {
+    // TODO redo for different cases (like CNot, CRotate)
     //./print what > where
     if (argc != 2) {
         cerr << "Wrong number of arguments";
