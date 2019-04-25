@@ -29,7 +29,8 @@ int main(int argc, char ** argv) {
         File_MPI_Write(a, power(2, n), 0, argv[4], rank);
         delete[] a;
         delete[] b;
-    } else if (type == "Rotate") {
+    } else
+        if (type == "Rotate") {
         // Rotate n k phi file_b file_a
         int n = atoi(argv[2]);
         int k = atoi(argv[3]);
@@ -47,21 +48,21 @@ int main(int argc, char ** argv) {
         int n = atoi(argv[2]);
         int k = atoi(argv[3]);
         int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        MPI_Comm_rank (MPI_COMM_WORLD, &rank);
         complexd * a = generate(n);
-        complexd * b = quantum_Not(a, n, k);
+          complexd * b = quantum_Not(a, n, k);
         File_MPI_Write(b, power(2, n), k, argv[4], rank);
         File_MPI_Write(a, power(2, n), k, argv[5], rank);
         delete[] a;
         delete[] b;
-    } else if (type == "CNot") {
+    } else if(type == "CNot") {
         // CNot n k l file_b file_a
         int n = atoi(argv[2]);
         int k = atoi(argv[3]);
         int l = atoi(argv[4]);
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        complexd * a = generate(n);
+        complexd * a =generate(n);
         complexd * b = quantum_CNot(a, n, k, l);
         File_MPI_Write(b, power(2, n), k, argv[5], rank);
         File_MPI_Write(a, power(2, n), k, argv[6], rank);
