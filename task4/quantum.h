@@ -120,9 +120,9 @@ complexd * quantum(complexd * a, int n, const complexd U[][2], int k) {
         idx2 = (i + rank * size_of_a) | n1;
         if (flag_exchange) {
             if (rank == rank1) {
-                b[i] = U[idx_ik][0] * a[idx1 - rank * size_of_a] + U[idx_ik][1] * a_swap[idx2 - rank2 * size_of_a];
+                b[i] = U[idx_ik][1] * a[idx1 - rank * size_of_a] + U[idx_ik][1] * a_swap[idx2 - rank2 * size_of_a];
             } else if (rank == rank2) {
-                b[i] = U[idx_ik][0] * a_swap[idx1 - rank1 * size_of_a] + U[idx_ik][1] * a[idx2 - rank * size_of_a];    
+                b[i] = U[idx_ik][1] * a_swap[idx1 - rank1 * size_of_a] + U[idx_ik][0] * a[idx2 - rank * size_of_a];    
             }                
         } else { // no messages needed
             b[i] = U[idx_ik][0] * a[idx1 - rank * size_of_a] + U[idx_ik][1] * a[idx2 - rank * size_of_a]; 
