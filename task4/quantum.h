@@ -266,10 +266,10 @@ complexd * quantum4x4(complexd * a, int n, complexd U[][4], int k, int l) {
     for (uint64_t i = 0; i < size_of_a; i++) {
         uint64_t idx_ik = ((((i + rank * size_of_a) >> (n - k)) % 2) << 1) | 
                            (((i + rank * size_of_a) >> (n - l)) % 2);
-        idx1 = (i + rank * size_of_a) & n00;
-        idx2 = ((i + rank * size_of_a) & n00) | n01;
-        idx3 = ((i + rank * size_of_a) & n00) | n10;
-        idx4 = (i + rank * size_of_a) | n11;
+        idx4 = (i + rank * size_of_a) & n00;
+        idx3 = ((i + rank * size_of_a) & n00) | n01;
+        idx1 = ((i + rank * size_of_a) & n00) | n10;
+        idx2 = (i + rank * size_of_a) | n11;
 
         // cout << idx_ik << " " << idx1 << " " << idx2 << " " << idx3 << " " << idx4 << " " << rank << endl;
         if (flag_exchange) {
