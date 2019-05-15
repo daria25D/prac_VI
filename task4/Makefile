@@ -1,6 +1,8 @@
 TARGET=task4 print
 all: $(TARGET)
 
+#TODO add entries for different tests
+
 task4: task4.cpp quantum.h
 	mpicxx -O3 -Wall -Werror -std=c++11 task4.cpp -o task4 -fopenmp
 print: print.cpp
@@ -31,4 +33,5 @@ test: task4 print
 lint: task4
 	cpplint --filter=-legal/copyright,-build/namespaces task4.cpp 
 	cpplint --filter=-legal/copyright,-build/namespaces test_not.cpp 
-	cpplint --filter=-legal/copyright,-build/namespaces test_Adamar.cpp 
+	cpplint --filter=-legal/copyright,-build/namespaces test_Adamar.cpp
+	cpplint --filter=-whitespace,-legal/copyright,-build/namespaces --linelength=120 quantum.h

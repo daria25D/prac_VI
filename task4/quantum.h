@@ -1,15 +1,15 @@
 #pragma once
-#ifndef QUANTUM_H
-#define QUANTUM_H
+#ifndef TASK4_QUANTUM_H_
+#define TASK4_QUANTUM_H_
 
+#include <omp.h>
 #include <iostream>
 #include <complex>
 #include <cstdlib>
 #include <random>
-#include <cmath>	
+#include <cmath>
 #include <ctime>
-#include "mpi.h"
-#include <omp.h>
+#include "./mpi.h"
 
 typedef std::complex<double> complexd;
 using namespace std;
@@ -101,8 +101,8 @@ complexd * quantum(complexd * a, int n, const complexd U[][2], int k) {
     if (flag_exchange) {          
         idx1 = (rank * size_of_a) & n0;
         idx2 = (rank * size_of_a) | n1;
-        rank1 = idx1/(int)size_of_a;
-        rank2 = idx2/(int)size_of_a;
+        rank1 = idx1/static_cast<int>(size_of_a);
+        rank2 = idx2/static_cast<int>(size_of_a);
         a_swap = new complexd[size_of_a];
         if (rank == rank1) {
             MPI_Send(a, size_of_a, MPI_CXX_DOUBLE_COMPLEX, rank2, 0, MPI_COMM_WORLD);
@@ -174,7 +174,8 @@ complexd * quantum4x4(complexd * a, int n, complexd U[][4], int k, int l) {
         // no messages - false
         // only for index l - true
         // for both k and l - true
-    } if (flag_exchange && pow(2, k) > size) {
+    }
+    if (flag_exchange && pow(2, k) > size) {
         flag_l_only = true;
     }
     if (flag_exchange) {          
@@ -182,14 +183,14 @@ complexd * quantum4x4(complexd * a, int n, complexd U[][4], int k, int l) {
         idx2 = ((rank * size_of_a) & n00) | n01;
         idx3 = ((rank * size_of_a) & n00) | n10;
         idx4 = (rank * size_of_a) | n11;
-        rank1 = idx1/(int)size_of_a; // 00
-        rank2 = idx2/(int)size_of_a; // 01 different from rank1 <=> flag_l_only
-        rank3 = idx3/(int)size_of_a; // 10 different from rank1 <=> flag_exchange
-        rank4 = idx4/(int)size_of_a; // 11 different from rank3 <=> flag_l_only 
-                                     // 11 different from rank2 <=> flag_exchange
-                                     // !flag_l_only <=> rank1 = rank2, rank3 = rank4
-                                     // !flag_exchange <=> rank1 = rank2 = rank3 = rank4
-                                     // flag_l_only && flag_exchange <=> rank1 != rank2 != rank3 != rank4
+        rank1 = idx1/static_cast<int>(size_of_a); // 00
+        rank2 = idx2/static_cast<int>(size_of_a); // 01 different from rank1 <=> flag_l_only
+        rank3 = idx3/static_cast<int>(size_of_a); // 10 different from rank1 <=> flag_exchange
+        rank4 = idx4/static_cast<int>(size_of_a); // 11 different from rank3 <=> flag_l_only
+                                                  // 11 different from rank2 <=> flag_exchange
+                                                  // !flag_l_only <=> rank1 = rank2, rank3 = rank4
+                                                  // !flag_exchange <=> rank1 = rank2 = rank3 = rank4
+                                                  // flag_l_only && flag_exchange <=> rank1 != rank2 != rank3 != rank4
         if (flag_l_only) {
             a_swap_l = new complexd[size_of_a];
             if (rank == rank1) {
@@ -390,4 +391,4 @@ void File_MPI_Write(complexd * b, uint64_t size_array, int k, char * filename, i
     MPI_File_close(&out);
 }
 
-#endif
+#endif // TASK4_QUANTUM_H_
