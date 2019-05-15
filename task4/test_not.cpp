@@ -44,6 +44,7 @@ int main(int argc, char **argv) {
         q++;
         tmpn >>= 1;
     }
+    int l = k;
     k = q - k;
     uint64_t bit = 1ull << k;
     for (uint64_t i = 0; i < size; ++i) {
@@ -51,7 +52,7 @@ int main(int argc, char **argv) {
     }
     f = fopen(argv[4], "wb");
     fwrite(&size, sizeof(size), 1, f);
-    fwrite(&k, sizeof(k), 1, f);
+    fwrite(&l, sizeof(l), 1, f);
     fwrite(b, sizeof(b[0]), size, f);
     fclose(f);
     delete [] a;

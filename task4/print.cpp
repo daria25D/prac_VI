@@ -20,16 +20,24 @@ long long power(int base, int deg) {
 int main(int argc, char ** argv) {
     // TODO redo for different cases (like CNot, CRotate)
     //./print what > where
-    if (argc != 2) {
+    if (argc != 3) {
         cerr << "Wrong number of arguments";
         return -1;
     }
     fstream file(argv[1], ios::binary | ios::in);
+    int type = atoi(argv[2]);
     long long size;
-    int k;
+    int k, l;
     file.read((char *)&size, sizeof(size));
     file.read((char *)&k, sizeof(k));
-    cout << size << setw(5) << k << endl;
+    if (type == 2) {
+        file.read((char *)&l, sizeof(l));
+    }
+    cout << size << setw(5) << k;
+    if (type == 2) {
+        cout << setw(5) << l;
+    }
+    cout << endl;
     complex<double> f;
     for (long long i = 0; i < size; i++) {
         file.read((char *)&f, sizeof(f));

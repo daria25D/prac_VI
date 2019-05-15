@@ -271,10 +271,10 @@ complexd * quantum4x4(complexd * a, int n, complexd U[][4], int k, int l) {
         idx3 = ((i + rank * size_of_a) & n00) | n10;
         idx4 = (i + rank * size_of_a) | n11;
 
-        //cout << idx_ik << " " << idx1 << " " << idx2 << " " << idx3 << " " << idx4 << endl;
+        // cout << idx_ik << " " << idx1 << " " << idx2 << " " << idx3 << " " << idx4 << endl;
         if (flag_exchange) {
             if (flag_l_only) {
-                //cout << "flag_l_only" << endl;
+                // cout << "flag_l_only" << endl;
                 if (rank == rank1) {
                     b[i] = U[idx_ik][0] * a[idx1 - rank * size_of_a] + 
                            U[idx_ik][1] * a[idx2 - rank * size_of_a] +
@@ -287,7 +287,7 @@ complexd * quantum4x4(complexd * a, int n, complexd U[][4], int k, int l) {
                            U[idx_ik][3] * a[idx4 - rank * size_of_a];    
                 }    
             } else {
-                //cout << "flag_exchange" << endl;
+                // cout << "flag_exchange" << endl;
                 if (rank == rank1) {
                     b[i] = U[idx_ik][0] * a[idx1 - rank * size_of_a] +
                            U[idx_ik][1] * a_swap_2[idx2 - rank2 * size_of_a] + 
@@ -311,7 +311,7 @@ complexd * quantum4x4(complexd * a, int n, complexd U[][4], int k, int l) {
                 }
             }      
         } else { // no messages needed
-            //cout << "no messages" << endl;
+            // cout << "no messages" << endl;
             b[i] = U[idx_ik][0] * a[idx1 - rank * size_of_a] +
                    U[idx_ik][1] * a[idx2 - rank * size_of_a] + 
                    U[idx_ik][2] * a[idx3 - rank * size_of_a] +
@@ -345,7 +345,8 @@ complexd * quantum_Rotate(complexd * a, int n, int k, double phi) {
 }
 
 complexd * quantum_Not(complexd * a, int n, int k) {
-    const complexd N[2][2] = {{0, 1}, {1, 0}};
+    const complexd N[2][2] = {{0, 1},
+                              {1, 0}};
     return quantum(a, n, N, k);
 }
 
@@ -365,30 +366,35 @@ complexd * quantum_CRotate(complexd * a, int n, int k, int l, double phi) {
     return quantum4x4(a, n, R, k, l);
 }
 
-void File_MPI_Write(complexd * b, uint64_t size_array, int k, char * filename, int rank) {
+void File_MPI_Write(complexd * b, uint64_t size_array, int k, int l, char * filename, int rank) {
     MPI_File out;
     MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &out);
 
     int complex_size, long_size;
     MPI_Type_size(MPI_CXX_DOUBLE_COMPLEX, &complex_size);
     MPI_Type_size(MPI_LONG_LONG, &long_size);
+    int int_size;
+    MPI_Type_size(MPI_INT, &int_size);
 
     int size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    if (rank == 0) {
+    if (rank == 0) { // printed single for nAdamar
         MPI_File_write(out, &size_array, 1, MPI_LONG_LONG, MPI_STATUS_IGNORE);
     }
-    if (k != 0) {
+    if (k != 0) { // printed for H, Rot, Not, CRot, CNot - only (or first) index
         if (rank == 0) MPI_File_write(out, &k, 1, MPI_INT, MPI_STATUS_IGNORE);
-        int int_size;
-        MPI_Type_size(MPI_INT, &int_size);
+        long_size += int_size;
+    }
+    if (l != 0) { // printed for CRot, CNot - second index
+        if (rank == 0) MPI_File_write(out, &l, 1, MPI_INT, MPI_STATUS_IGNORE);
         long_size += int_size;
     }
     MPI_File_set_view(out, rank * (size_array/size) * complex_size + long_size, MPI_CXX_DOUBLE_COMPLEX, 
                         MPI_CXX_DOUBLE_COMPLEX, "native", MPI_INFO_NULL);
     MPI_File_write(out, b, size_array/size, MPI_CXX_DOUBLE_COMPLEX, MPI_STATUS_IGNORE);
     MPI_File_close(&out);
+
 }
 
 #endif // TASK4_QUANTUM_H_
