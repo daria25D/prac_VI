@@ -83,8 +83,8 @@ complexd * quantum(complexd * a, int n, const complexd U[][2], int k) {
     uint64_t n1 = 1;
     uint64_t idx1, idx2;        
     int rank1 = 0, rank2 = 0;
-    //for (uint64_t j = 0; j < n - k; j++) 
-        n1 <<= n-k;
+    for (int j = 0; j < n - k; j++)
+        n1 <<= 1;
     uint64_t n0 = 1;
     for (int j = 0; j < n; j++) {
         if (j == k - 1)
@@ -149,11 +149,11 @@ complexd * quantum4x4(complexd * a, int n, complexd U[][4], int k, int l) {
         k = l;
         l = sw;
     }
-    //for (uint64_t j = 0; j < n - k; j++) 
-        n11 <<= n-k;
-        n10 = n11;
-        uint64_t nl = 1l<<(n-l);
-        n11 |= nl;
+    for (int j = 0; j < n - k; j++)
+        n11 <<= 1;
+    n10 = n11;
+    uint64_t nl = 1l<<(n-l);
+    n11 |= nl;
     uint64_t n00 = 1, n01;
     for (int j = 0; j < n; j++) {
         if (j == k - 1 || j == l - 1)
@@ -271,7 +271,7 @@ complexd * quantum4x4(complexd * a, int n, complexd U[][4], int k, int l) {
         idx3 = ((i + rank * size_of_a) & n00) | n10;
         idx4 = (i + rank * size_of_a) | n11;
 
-        // cout << idx_ik << " " << idx1 << " " << idx2 << " " << idx3 << " " << idx4 << endl;
+        // cout << idx_ik << " " << idx1 << " " << idx2 << " " << idx3 << " " << idx4 << " " << rank << endl;
         if (flag_exchange) {
             if (flag_l_only) {
                 // cout << "flag_l_only" << endl;

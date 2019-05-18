@@ -1,4 +1,3 @@
-/* "Copyright 2019 <Copyright Owner>" */
 #include <string>
 #include <fstream>
 #include "./quantum.h"

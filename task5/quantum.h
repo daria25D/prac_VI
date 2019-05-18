@@ -14,7 +14,8 @@
 typedef std::complex<double> complexd;
 using namespace std;
 
-const complexd U_[2][2] = {{1 / sqrt(2), 1 / sqrt(2)}, {1 / sqrt(2), -1 / sqrt(2)}};
+const complexd U_[2][2] = {{1 / sqrt(2),  1 / sqrt(2)},
+                           {1 / sqrt(2), -1 / sqrt(2)}};
 
 uint64_t power(uint64_t base, uint64_t deg) {
     uint64_t res = 1;
@@ -83,8 +84,8 @@ complexd * quantum(complexd * a, int n, const complexd U[][2], int k) {
     uint64_t n1 = 1;
     uint64_t idx1, idx2;        
     int rank1 = 0, rank2 = 0;
-    //for (uint64_t j = 0; j < n - k; j++) 
-        n1 <<= n-k;
+    for (int j = 0; j < n - k; j++)
+        n1 <<= 1;
     uint64_t n0 = 1;
     for (int j = 0; j < n; j++) {
         if (j == k - 1)
@@ -149,11 +150,11 @@ complexd * quantum4x4(complexd * a, int n, complexd U[][4], int k, int l) {
         k = l;
         l = sw;
     }
-    //for (uint64_t j = 0; j < n - k; j++) 
-        n11 <<= n-k;
-        n10 = n11;
-        uint64_t nl = 1l<<(n-l);
-        n11 |= nl;
+    for (int j = 0; j < n - k; j++)
+        n11 <<= 1;
+    n10 = n11;
+    uint64_t nl = 1l<<(n-l);
+    n11 |= nl;
     uint64_t n00 = 1, n01;
     for (int j = 0; j < n; j++) {
         if (j == k - 1 || j == l - 1)
@@ -261,8 +262,8 @@ complexd * quantum4x4(complexd * a, int n, complexd U[][4], int k, int l) {
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);
-// #pragma omp parallel shared(size_of_a, b, a_swap_l, rank, rank1, rank2, n00, n11, flag_exchange)
-// #pragma omp for
+#pragma omp parallel shared(size_of_a, b, a_swap_l, a_swap_1, a_swap_2, a_swap_3, rank, rank1, rank2, n00, n11, n01, n10, flag_exchange)
+#pragma omp for
     for (uint64_t i = 0; i < size_of_a; i++) {
         uint64_t idx_ik = ((((i + rank * size_of_a) >> (n - k)) % 2) << 1) | 
                            (((i + rank * size_of_a) >> (n - l)) % 2);
@@ -326,10 +327,10 @@ complexd * quantum_Adamar(complexd * a, int n, int k) {
 }
 
 complexd * quantum_nAdamar(complexd * a, int n) {
-    complexd * b = new complexd;
     int size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     uint64_t size_array = power(2, n) / size;
+    complexd * b = new complexd[size_array];
     for (int k = 0; k < n; k++) {
         b = quantum(a, n, U_, k);
         memmove(a, b, sizeof(complexd) * size_array);
