@@ -29,11 +29,12 @@ int main(int argc, char ** argv) {
     long long size;
     int k, l;
     file.read((char *)&size, sizeof(size));
-    file.read((char *)&k, sizeof(k));
+    if (type != 0) file.read((char *)&k, sizeof(k));
     if (type == 2) {
         file.read((char *)&l, sizeof(l));
     }
-    cout << size << setw(5) << k;
+    cout << size << setw(5);
+    if (type != 0) cout << k;
     if (type == 2) {
         cout << setw(5) << l;
     }
