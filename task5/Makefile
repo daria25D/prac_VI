@@ -16,6 +16,9 @@ test: task5 print
 	mpirun -n 2 ./task5 2 b.dat a_test_2.dat test
 	diff -s b.txt b_test_2.txt
 
+	mpirun -n 2 ./task5 3 b.dat a_test_3.dat test
+	diff -s b.txt b_test_3.txt
+
 lint: task5
 	cpplint --filter=-legal/copyright,-build/namespaces task5.cpp
 	cpplint --filter=-whitespace,-legal/copyright,-build/namespaces --linelength=120 quantum.h
