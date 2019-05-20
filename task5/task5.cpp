@@ -52,17 +52,17 @@ int main(int argc, char ** argv) {
         //cout << i << endl;
         double timer2 = MPI_Wtime();
         b = quantum_Adamar(a, n, i);
-        timer2 = MPI_Wtime() - timer2;
-        timer += timer2;
+        //timer2 = MPI_Wtime() - timer2;
+        //timer += timer2;
         memmove(a, b, sizeof(complexd) * size_array / size);
         int m = 2;
         for (int j = i + 1; j <= n; j++) {
             //if (rank == 0) cout << i << " " << j << endl;
             double phi = 2 * M_PI / power(2, m);
-            timer2 = MPI_Wtime();
+            //timer2 = MPI_Wtime();
             b = quantum_CRotate(a, n, i, j, phi);
-            timer2 = MPI_Wtime() - timer2;
-            timer += timer2;
+            //timer2 = MPI_Wtime() - timer2;
+            //timer += timer2;
             memmove(a, b, sizeof(complexd) * size_array / size);
             m++;
             if (j != n) delete[] b;
