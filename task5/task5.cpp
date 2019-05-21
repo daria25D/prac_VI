@@ -50,7 +50,7 @@ int main(int argc, char ** argv) {
     double timer = MPI_Wtime();
     for (int i = 1; i <= n; i++) {
         //cout << i << endl;
-        double timer2 = MPI_Wtime();
+        //double timer2 = MPI_Wtime();
         b = quantum_Adamar(a, n, i);
         //timer2 = MPI_Wtime() - timer2;
         //timer += timer2;
